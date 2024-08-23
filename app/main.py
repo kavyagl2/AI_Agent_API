@@ -122,4 +122,4 @@ def handle_poem_query_handler(request: Request, user_query: str) -> JSONResponse
 
 # return types on all functions (function types of all the arguments)
 # data classes python 
-# exceptions handling - return a json response (explicit status code HTTP)
+# exceptions handling - return a json response (explicit status code HTTP) 
