@@ -4,7 +4,7 @@ from .poem_logic import generate_poem, trim_poem, recapitalize, decapitalize, ha
 from .state import StateManager
 from .openai_client import setup_llm
 from .models import PoemResponseModel
-from .utils import handle_exceptions, json_response
+from .utils import json_response
 
 app = FastAPI()
 
@@ -17,8 +17,7 @@ def get_state(request: Request) -> StateManager:
     return request.app.state.state_manager
 
 @app.post("/generate_poem", response_model=PoemResponseModel)
-@handle_exceptions
-def generate_poem_handler(
+async def generate_poem_handler(
     request: Request, 
     prompt: str, 
     style: Optional[str] = None, 
@@ -27,76 +26,117 @@ def generate_poem_handler(
     tone: Optional[str] = None
 ) -> PoemResponseModel:
     if not prompt:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Prompt is required to generate a poem."
+        return json_response(
+            {"message": "Prompt is required to generate a poem."},
+            status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    state = get_state(request)
-    poem = generate_poem(prompt, style, mood, purpose, tone)
-    state.update_poem(poem)
-    return json_response(content={"poem": poem}, status_code=status.HTTP_201_CREATED)
-
-@app.post("/trim_poem", response_model=PoemResponseModel)
-@handle_exceptions
-def trim_poem_handler(request: Request) -> PoemResponseModel:
-    state = get_state(request)
-    current_poem = state.get_poem()
-    if not current_poem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No poem available to trim."
+    try:
+        state = get_state(request)
+        poem = generate_poem(prompt, style, mood, purpose, tone)
+        state.update_poem(poem)
+        return json_response(
+            {"message": "Poem generated successfully", "data": {"poem": poem}},
+            status_code=status.HTTP_201_CREATED
+        )
+    except Exception as e:
+        return json_response(
+            {"message": "Failed to generate poem", "error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-    trimmed_poem = trim_poem(current_poem)
-    state.update_poem(trimmed_poem)
-    return json_response(content={"trimmed_poem": trimmed_poem}, status_code=status.HTTP_200_OK)
-
-@app.post("/recapitalize", response_model=PoemResponseModel)
-@handle_exceptions
-def recapitalize_handler(request: Request) -> PoemResponseModel:
+@app.put("/trim_poem", response_model=PoemResponseModel)
+async def trim_poem_handler(request: Request) -> PoemResponseModel:
     state = get_state(request)
     current_poem = state.get_poem()
     if not current_poem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No poem text available to recapitalize."
+        return json_response(
+            {"message": "No poem available to trim."},
+            status_code=status.HTTP_404_NOT_FOUND
         )
 
-    recapitalized_text = recapitalize(current_poem)
-    state.update_poem(recapitalized_text)
-    return json_response(content={"recapitalized_text": recapitalized_text}, status_code=status.HTTP_200_OK)
+    try:
+        trimmed_poem = trim_poem(current_poem)
+        state.update_poem(trimmed_poem)
+        return json_response(
+            {"message": "Poem trimmed successfully", "data": {"trimmed_poem": trimmed_poem}},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return json_response(
+            {"message": "Failed to trim poem", "error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
-@app.post("/decapitalize", response_model=PoemResponseModel)
-@handle_exceptions
-def decapitalize_handler(request: Request) -> PoemResponseModel:
+@app.put("/recapitalize", response_model=PoemResponseModel)
+async def recapitalize_handler(request: Request) -> PoemResponseModel:
     state = get_state(request)
     current_poem = state.get_poem()
     if not current_poem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No poem text available to decapitalize."
+        return json_response(
+            {"message": "No poem text available to recapitalize."},
+            status_code=status.HTTP_404_NOT_FOUND
         )
 
-    decapitalized_text = decapitalize(current_poem)
-    state.update_poem(decapitalized_text)
-    return json_response(content={"decapitalized_text": decapitalized_text}, status_code=status.HTTP_200_OK)
+    try:
+        recapitalized_text = recapitalize(current_poem)
+        state.update_poem(recapitalized_text)
+        return json_response(
+            {"message": "Poem recapitalized successfully", "data": {"recapitalized_text": recapitalized_text}},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return json_response(
+            {"message": "Failed to recapitalize poem", "error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@app.put("/decapitalize", response_model=PoemResponseModel)
+async def decapitalize_handler(request: Request) -> PoemResponseModel:
+    state = get_state(request)
+    current_poem = state.get_poem()
+    if not current_poem:
+        return json_response(
+            {"message": "No poem text available to decapitalize."},
+            status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    try:
+        decapitalized_text = decapitalize(current_poem)
+        state.update_poem(decapitalized_text)
+        return json_response(
+            {"message": "Poem decapitalized successfully", "data": {"decapitalized_text": decapitalized_text}},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return json_response(
+            {"message": "Failed to decapitalize poem", "error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @app.post("/handle_poem_query", response_model=PoemResponseModel)
-@handle_exceptions
-def handle_poem_query_handler(request: Request, user_query: str) -> PoemResponseModel:
+async def handle_poem_query_handler(request: Request, user_query: str) -> PoemResponseModel:
     state = get_state(request)
     current_poem = state.get_poem()
     if not current_poem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No poem available to analyze."
+        return json_response(
+            {"message": "No poem available to analyze."},
+            status_code=status.HTTP_404_NOT_FOUND
         )
     if not user_query:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User query is required to analyze the poem."
+        return json_response(
+            {"message": "User query is required to analyze the poem."},
+            status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    answer = handle_poem_query(current_poem, user_query)
-    return json_response(content={"answer": answer}, status_code=status.HTTP_200_OK)
+    try:
+        answer = handle_poem_query(current_poem, user_query)
+        return json_response(
+            {"message": "Query handled successfully", "data": {"answer": answer}},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return json_response(
+            {"message": "Failed to handle poem query", "error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
