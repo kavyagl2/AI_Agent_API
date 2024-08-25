@@ -1,12 +1,15 @@
+from dataclasses import dataclass, field
+import openai
+
+from .openai_client import setup_llm
+
+@dataclass
 class StateManager:
-    def __init__(self):
-        self.last_poem = ""
+    last_poem: str = ""
+    client: openai.OpenAI = field(default_factory=setup_llm)
 
     def update_poem(self, poem: str):
         self.last_poem = poem
 
-    def get_poem(self):
+    def get_poem(self) -> str:
         return self.last_poem
-
-
-# get(2) the poem and update(1) the poem function (state.poem) get_poem and update_peom -. convert into dataclass

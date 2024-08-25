@@ -1,10 +1,8 @@
 from typing import Optional
-from app.openai_client import setup_llm
-
-# Initialize the OpenAI client
-client = setup_llm()
+from openai import OpenAI
 
 def generate_poem(
+    client: OpenAI,
     prompt: str, 
     style: Optional[str] = None, 
     mood: Optional[str] = None, 
@@ -15,6 +13,7 @@ def generate_poem(
     Generate a poem based on the provided prompt and optional style, mood, purpose, and tone.
     
     Args:
+        client (OpenAI): The OpenAI client for making API requests.
         prompt (str): The initial text or idea for the poem.
         style (Optional[str]): The style of the poem (e.g., sonnet, haiku).
         mood (Optional[str]): The mood of the poem (e.g., happy, sad).
@@ -24,7 +23,6 @@ def generate_poem(
     Returns:
         str: The generated poem.
     """
-    # Construct the detailed prompt for the model
     prompt_details = f"Create a {style} poem with a {mood} mood for {purpose} in a {tone} tone:\n{prompt}"
 
     response = client.chat.completions.create(
@@ -34,19 +32,10 @@ def generate_poem(
             {"role": "user", "content": prompt_details}
         ]
     )
-    poem = response.choices[0].message.content.strip()
+    poem = response.choices[0].message.content.strip() # type: ignore
     return poem
 
 def trim_poem(poem: str) -> str:
-    """
-    Trim the poem by combining every two lines into one.
-
-    Args:
-        poem (str): The original poem.
-
-    Returns:
-        str: The trimmed version of the poem.
-    """
     lines = poem.strip().split('\n')
     trimmed_poem = [
         lines[i] + " " + lines[i + 1] if i + 1 < len(lines) else lines[i]
@@ -55,41 +44,12 @@ def trim_poem(poem: str) -> str:
     return '\n'.join(trimmed_poem)
 
 def recapitalize(poem: str) -> str:
-    """
-    Recapitalize all text in the poem to uppercase.
-
-    Args:
-        poem (str): The original poem.
-
-    Returns:
-        str: The poem with all text in uppercase.
-    """
     return poem.upper()
 
 def decapitalize(poem: str) -> str:
-    """
-    Decapitalize all text in the poem to lowercase.
-
-    Args:
-        poem (str): The original poem.
-
-    Returns:
-        str: The poem with all text in lowercase.
-    """
     return poem.lower()
 
-def handle_poem_query(poem: str, user_query: str) -> str:
-    """
-    Analyze the poem and respond to a user query about it.
-
-    Args:
-        poem (str): The poem text to analyze.
-        user_query (str): The user's query regarding the poem.
-
-    Returns:
-        str: The response to the user's query.
-    """
-    # Construct the prompt for the model to analyze the poem
+def handle_poem_query(client: OpenAI, poem: str, user_query: str) -> str:
     prompt = f"Here is a poem:\n\n{poem}\n\nThe user has a question about the poem: {user_query}\n\nAnswer the question in a helpful manner."
     
     response = client.chat.completions.create(
@@ -99,5 +59,5 @@ def handle_poem_query(poem: str, user_query: str) -> str:
             {"role": "user", "content": prompt}
         ]
     )
-    answer = response.choices[0].message.content.strip()
+    answer = response.choices[0].message.content.strip() # type: ignore
     return answer
