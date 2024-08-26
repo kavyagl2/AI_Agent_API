@@ -3,8 +3,9 @@ import openai
 
 from .openai_client import setup_llm
 
+
 @dataclass
-class StateManager:
+class State:
     last_poem: str = ""
     client: openai.OpenAI = field(default_factory=setup_llm)
 
