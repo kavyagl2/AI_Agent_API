@@ -9,3 +9,7 @@ def internal_error_response(msg: str, error: Exception) -> PoemResponseModel:
         message=msg,
         data={"error": str(error)},
     )
+
+class OpenAIException(BaseException):
+    """Custom exception for handling OpenAI-related errors."""
+    pass

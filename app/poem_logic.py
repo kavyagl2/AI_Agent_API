@@ -1,10 +1,6 @@
 from typing import Optional
 from openai import OpenAI
-
-
-class OpenAIException(BaseException):
-    pass
-
+from .utils import OpenAIException
 
 def generate_poem(
     client: OpenAI,
@@ -37,8 +33,10 @@ def generate_poem(
             {"role": "user", "content": prompt_details},
         ],
     )
-    poem = response.choices[0].message.content.strip()  # type: ignore
-    return poem
+    answer = response.choices[0].message.content
+    if answer is None:
+        raise OpenAIException()
+    return answer.strip()
 
 
 def trim_poem(poem: str) -> str:
