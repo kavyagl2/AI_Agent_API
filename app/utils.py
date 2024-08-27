@@ -1,12 +1,11 @@
 from fastapi import status
-from fastapi.responses import JSONResponse
+
+from app.models import PoemResponseModel
 
 
-def internal_error_response(msg: str, error: Exception) -> JSONResponse:
-    """
-    Utility function to standardize Internal Server Error Responses
-    """
-    return JSONResponse(
-        content={"message": msg, "error": str(error)},
+def internal_error_response(msg: str, error: Exception) -> PoemResponseModel:
+    return PoemResponseModel(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        message=msg,
+        data={"error": str(error)},
     )
