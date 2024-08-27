@@ -3,7 +3,6 @@ import openai
 
 from .openai_client import setup_llm
 
-
 @dataclass
 class State:
     last_poem: str = ""
