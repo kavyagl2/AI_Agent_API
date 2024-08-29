@@ -95,27 +95,6 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
         else:
             raise FunctionNotFoundException(f"Function {function_name} not found.")
 
-    except FunctionNotFoundException:
-        return PoemResponseModel(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            message="Function not found.",
-            data={}
-        )
-
-    except PoemProcessingException:
-        return PoemResponseModel(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            message="Error processing the poem.",
-            data={}
-        )
-
-    except UserInputException:
-        return PoemResponseModel(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            message="Invalid user input.",
-            data={}
-        )
-
     except OpenAIException:
         return PoemResponseModel(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
