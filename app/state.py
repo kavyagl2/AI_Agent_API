@@ -23,35 +23,49 @@ def get_function_definitions() -> List[Dict[str, Any]]:
     Returns the list of function definitions to be used by the OpenAI client for
     tool calling based on user input.
     """
-    return [
+    tools = [
         {
-            "name": "generate_poem",
-            "description": "Generate a poem based on a prompt.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "prompt": {"type": "string"},
-                    "style": {"type": "string"},
-                    "mood": {"type": "string"},
-                    "purpose": {"type": "string"},
-                    "tone": {"type": "string"}
-                },
-                "required": ["prompt"]
+            "type":"function",
+            "function":{
+                "name": "generate_poem",
+                "description": "Generate a poem based on a prompt.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": {"type": "string"},
+                        "style": {"type": "string"},
+                        "mood": {"type": "string"},
+                        "purpose": {"type": "string"},
+                        "tone": {"type": "string"}
+                    },
+                    "required": ["prompt"]
             }
         },
-        {
-            "name": "trim_poem",
-            "description": "Trim a poem to half its length."
         },
         {
-            "name": "recapitalize",
-            "description": "Capitalize all letters in the poem."
+            "type": "function",
+            "function":{
+                "name": "trim_poem",
+                "description": "Trim a poem to half its length."
+        },
         },
         {
+            "type": "function",
+            "function":{
+                "name": "recapitalize",
+                "description": "Capitalize all letters in the poem."
+        },
+        },
+        {
+            "type": "function",
+            "function":{
             "name": "decapitalize",
             "description": "Lowercase all letters in the poem."
         },
+        },
         {
+            "type": "function",
+            "function":{
             "name": "handle_poem_query",
             "description": "Answer a question about a generated poem.",
             "parameters": {
@@ -61,5 +75,8 @@ def get_function_definitions() -> List[Dict[str, Any]]:
                 },
                 "required": ["user_query"]
             }
-        }
+        },
+        },
     ]
+
+    return tools
