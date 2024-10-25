@@ -27,7 +27,7 @@ def generate_poem(
     prompt_details = f"Create a {style} poem with a {mood} mood for {purpose} in a {tone} tone:\n{prompt}"
 
     response = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-4o-2024-08-06",
         messages=[
             {"role": "system", "content": "You are a creative poet."},
             {"role": "user", "content": prompt_details},
@@ -60,7 +60,7 @@ def handle_poem_query(client: OpenAI, poem: str, user_query: str) -> str:
     prompt = f"Here is a poem:\n\n{poem}\n\nThe user has a question about the poem: {user_query}\n\nAnswer the question in a helpful manner."
 
     response = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-4o-2024-08-06",
         messages=[
             {
                 "role": "system",
