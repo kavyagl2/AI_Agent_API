@@ -7,7 +7,15 @@ from app.poem_logic import (
     handle_poem_query,
 )
 from app.state import State, get_function_definitions
-from app.models import PoemResponseModel, PoemRequestModel, GeneratePoemSchema, TrimPoemSchema, RecapitalizeSchema, DecapitalizeSchema, HandlePoemQuerySchema
+from app.models import (
+    PoemResponseModel, 
+    PoemRequestModel, 
+    GeneratePoemSchema, 
+    TrimPoemSchema, 
+    RecapitalizeSchema, 
+    DecapitalizeSchema, 
+    HandlePoemQuerySchema)
+
 from app.utils import (
     OpenAIException,
     FunctionNotFoundException,
@@ -18,6 +26,7 @@ from app.utils import (
 
 import json
 from typing import Callable, Any, Dict
+from openai.types.chat import ChatCompletionToolParam
 
 router = APIRouter()
 
@@ -108,17 +117,16 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
 
 @router.post("/process_prompt", response_model=PoemResponseModel)
 async def process_prompt(request: PoemRequestModel):
-    prompt = request.prompt  # Access the prompt from the request model
-
+    prompt = request.prompt 
+    tools = [ChatCompletionToolParam(**tool) for tool in get_function_definitions()]
     try:
-        # Use OpenAI to determine which function to call
         response = state.client.chat.completions.create(
             model="gpt-4o-2024-08-06",
             messages=[
                 {"role": "system", "content": "You are an assistant that decides which function to call based on user input."},
                 {"role": "user", "content": prompt}
             ],
-            tools=get_function_definitions(), # Retrieve functions definition from state.py
+            tools=tools,
             tool_choice="required"  
         )
         
@@ -139,7 +147,7 @@ async def process_prompt(request: PoemRequestModel):
             for tool_call in tool_calls:
                 # Extract the function name and arguments from the tool call
                 function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
+                function_args = json.loads(tool_call.function.arguments) #change
                 
                 # Retrieve the function to call from the available functions
                 if function_name in available_functions:
