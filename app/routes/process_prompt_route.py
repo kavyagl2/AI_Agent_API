@@ -9,12 +9,7 @@ from app.poem_logic import (
 from app.state import State, get_function_definitions
 from app.models import (
     PoemResponseModel, 
-    PoemRequestModel, 
-    GeneratePoemSchema, 
-    TrimPoemSchema, 
-    RecapitalizeSchema, 
-    DecapitalizeSchema, 
-    HandlePoemQuerySchema)
+    PoemRequestModel)
 
 from app.utils import (
     OpenAIException,
@@ -39,8 +34,7 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
     """
     try:
         if function_name == "generate_poem":
-            params = GeneratePoemSchema(**function_args)
-            poem = function_to_call(client=state.client,**params.model_dump())
+            poem = function_to_call(**function_args)
             state.update_poem(poem)
             return PoemResponseModel(
                 message="Poem generated successfully",
@@ -49,7 +43,6 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
             )
 
         elif function_name == "trim_poem":
-            TrimPoemSchema.model_validate(function_args)
             current_poem = state.get_poem()
             if not current_poem:
                 raise PoemProcessingException("No poem available to trim.")
@@ -62,7 +55,6 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
             )
 
         elif function_name == "recapitalize":
-            RecapitalizeSchema.model_validate(function_args)
             current_poem = state.get_poem()
             if not current_poem:
                 raise PoemProcessingException("No poem text available to recapitalize.")
@@ -75,7 +67,6 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
             )
 
         elif function_name == "decapitalize":
-            DecapitalizeSchema.model_validate(function_args)
             current_poem = state.get_poem()
             if not current_poem:
                 raise PoemProcessingException("No poem text available to decapitalize.")
@@ -88,14 +79,13 @@ def handle_function_call(function_name: str, function_to_call: Callable[..., Any
             )
 
         elif function_name == "handle_poem_query":
-            params = HandlePoemQuerySchema(**function_args)
             current_poem = state.get_poem()
             if not current_poem:
                 raise PoemProcessingException("No poem available to analyze.")
             user_query = function_args.get("user_query")
             if not user_query:
                 raise UserInputException("User query is required to analyze the poem.")
-            answer = function_to_call(state.client, current_poem, params.user_query)
+            answer = function_to_call(state.client, current_poem, user_query)
             return PoemResponseModel(
                 message="Query handled successfully",
                 data={"answer": answer},
@@ -169,6 +159,4 @@ async def process_prompt(request: PoemRequestModel):
 
     except Exception as e:
         return internal_error_response("Failed to process prompt", e)
-
-
 

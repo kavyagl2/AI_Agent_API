@@ -1,4 +1,3 @@
-#from typing import Optional
 from openai import OpenAI
 from .utils import OpenAIException
 from .models import PoemResponseModel, PoemRequestModel
@@ -31,10 +30,10 @@ def generate_poem(
         ],
         response_format=PoemResponseModel,
     )
-    answer:str | None = response.choices[0].message.content
+    answer: PoemResponseModel | None = response.choices[0].message.parsed  #type changes and extract the answer from the response
     if answer is None:
         raise OpenAIException()
-    return answer.strip()
+    return str(answer.data)  # change
 
 
 def trim_poem(poem: str) -> str:
@@ -66,9 +65,9 @@ def handle_poem_query(client: OpenAI, poem: str, user_query: str) -> str:
             },
             {"role": "user", "content": prompt},
         ],
-        response_format=PoemResponseModel,
+        response_format=PoemResponseModel, #change , exception changes, compose to types 
     )
-    answer:str | None = response.choices[0].message.content
+    answer:PoemResponseModel | None = response.choices[0].message.parsed
     if answer is None:
-        raise OpenAIException()
-    return answer.strip()
+        raise OpenAIException("An error occured while processing the prompt, please try again!")
+    return str(answer.data)

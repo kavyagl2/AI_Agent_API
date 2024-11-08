@@ -26,10 +26,14 @@ class State:
 
 
 def get_function_definitions() -> List[Dict[str, Any]]:
-    return [
-        GeneratePoemSchema.model_json_schema(),
-        TrimPoemSchema.model_json_schema(),
-        RecapitalizeSchema.model_json_schema(),
-        DecapitalizeSchema.model_json_schema(),
-        HandlePoemQuerySchema.model_json_schema(),
-    ]
+    definitions: List[Dict[str, Any]] = []
+    for schema in [
+        GeneratePoemSchema,
+        TrimPoemSchema,
+        RecapitalizeSchema,
+        DecapitalizeSchema,
+        HandlePoemQuerySchema,
+    ]:
+        definition = schema.Config.json_schema_extra
+        definitions.append({"function": definition["name"]})
+    return definitions
