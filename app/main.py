@@ -1,44 +1,39 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional
-from .tools import GeneratePoem, TrimPoem, Recapitalize, Decapitalize, HandlePoemQuery 
+from typing import Dict, Any
+from .state import State
+from .utils import execute_tool, parse_user_intent
 
 app = FastAPI()
 
-# Define the request body model for generating poems
-class PoemRequest(BaseModel):
-    prompt: str
-    style: Optional[str] = None
-    mood: Optional[str] = None
-    tone: Optional[str] = None
-    purpose: Optional[str] = None
-    transformation: Optional[str] = None  
+# Global state for maintaining the last generated or modified poem
+state = State()
 
-class PoemQueryRequest(BaseModel):
-    poem: str 
-    user_query: str  
-    
-@app.post("/generate_poem")
-async def generate_poem(request: PoemRequest):
-    # Generate the poem
-    poem = GeneratePoem(prompt=request.prompt, style=request.style, mood=request.mood, tone=request.tone, purpose=request.purpose).run()
-    
-    # Apply transformation if requested
-    if request.transformation:
-        if request.transformation == "trim":
-            poem = TrimPoem(poem=poem).run()
-        elif request.transformation == "capitalize":
-            poem = Recapitalize(poem=poem).run()
-        elif request.transformation == "decapitalize":
-            poem = Decapitalize(poem=poem).run()
-        else:
-            raise HTTPException(status_code=400, detail="Invalid transformation requested")
+@app.post("/process_request")
+async def process_request(user_input: Dict[str, Any]):
+    """
+    Process a dynamic request for poem generation, transformation, or query.
 
-    return {"poem": poem}
+    Args:
+        user_input (Dict[str, Any]): Input JSON containing prompt details or transformation/query request.
 
+    Returns:
+        Dict[str, Any]: Response with the generated/transformed poem or query result.
+    """
+    try:
+        # Parse the user's intent
+        parsed_intent = parse_user_intent(user_input, state)
+        tool_name = parsed_intent["tool_name"]
+        params = parsed_intent["params"]
 
-@app.post("/handle_poem_query")
-async def handle_poem_query(request: PoemQueryRequest):
-    # Handle the poem query using the provided HandlePoemQuery tool
-    response = HandlePoemQuery(poem=request.poem, user_query=request.user_query).run()
-    return {"response": response}
+        # Execute the identified tool function
+        result = execute_tool(tool_name, **params)
+
+        # Update the state if the tool modifies or generates a poem
+        if tool_name == "generate_poem" or tool_name in ["trim_poem", "recapitalize", "decapitalize"]:
+            state.update_poem(str(result))
+        # Return the result
+        return {"result": result}
+
+    except ValueError as e:
+        # Handle invalid user input
+        raise HTTPException(status_code=400, detail=str(e))

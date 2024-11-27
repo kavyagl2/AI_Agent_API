@@ -22,6 +22,8 @@ class State:
 
     def get_poem(self) -> str:
         """Retrieves the last generated poem from the state."""
+        if not self.last_poem:
+            raise ValueError("No poem has been generated yet.")
         return self.last_poem
 
 
