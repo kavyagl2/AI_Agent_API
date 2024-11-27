@@ -1,7 +1,10 @@
 from openai import OpenAI
-from .utils import OpenAIException
 from .models import PoemResponseModel, PoemRequestModel
 
+
+class OpenAIException(Exception): #defining this because we don't have openAI Exception class in utils.py anymore
+    pass
+ 
 def generate_poem(
     client: OpenAI,
     args: PoemRequestModel,
