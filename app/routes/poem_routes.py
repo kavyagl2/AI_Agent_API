@@ -9,7 +9,7 @@ from app.poem_logic import (
     handle_poem_query,
 )
 from app.state import State
-from app.models import PoemResponseModel
+from app.models import PoemResponseModel, PoemRequestModel
 
 router = APIRouter()
 state = State()
@@ -29,7 +29,14 @@ async def generate_poem_handler(
         )
 
     try:
-        poem = generate_poem(state.client, prompt, style, mood, purpose, tone)
+        poem_request = PoemRequestModel(
+        prompt=prompt,
+        style=style,
+        mood=mood,
+        purpose=purpose,
+        tone=tone
+    )
+        poem = generate_poem(state.client, poem_request)
         state.update_poem(poem)
         return PoemResponseModel(
             message="Poem generated successfully",
