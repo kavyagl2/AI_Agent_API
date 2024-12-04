@@ -159,4 +159,3 @@ async def process_prompt(request: PoemRequestModel):
 
     except Exception as e:
         return internal_error_response("Failed to process prompt", e)
-

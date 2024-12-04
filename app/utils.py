@@ -1,28 +1,40 @@
-from fastapi import status
-from app.models import PoemResponseModel
+def get_completion(messages, tool_functions, client, model):
+    
+    while True:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            tools=[{"type": "function", "function": func.openai_schema} for func in tool_functions],
+            tool_choice="auto",
+            temperature=0.5,
+            max_tokens=4096,
+        )
 
-class OpenAIException(BaseException):
-    """Custom exception for handling OpenAI-related errors."""
-    pass
+        completion_message = completion.choices[0].message
 
-class FunctionNotFoundException(OpenAIException):
-    """Custom exception for handling function not found errors."""
-    pass
+        if completion_message.tool_calls is None:
+            return completion_message.content
+        
+        else:
+            messages.append(completion_message)
+            for tool_call in completion_message.tool_calls:
+                tool_result = execute_tool(tool_call, tool_functions)
+                messages.append({
+                    "tool_call_id": tool_call.id, 
+                    "role": "tool",     
+                    "name": tool_call.function.name, 
+                    "content": tool_result,
+                    })
+            return messages
 
+def execute_tool(tool_call, funcs):
 
-class PoemProcessingException(OpenAIException):
-    """Custom exception for errors during poem processing."""
-    pass
-
-
-class UserInputException(OpenAIException):
-    """Custom exception for invalid user input or missing required input."""
-    pass
-
-
-def internal_error_response(msg: str, error: Exception) -> PoemResponseModel:
-    return PoemResponseModel(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        message=msg,
-        data={"error": str(error)},
-    )
+    func = next(iter([func for func in funcs if func.__name__ == tool_call["function"]["name"]]))
+    if not func:
+        return f"Error: Function {tool_call['function']['name']} not found. Available functions: {[func.__name__ for func in funcs]}"
+    try:
+        func = func(**eval(tool_call["function"]["arguments"]))
+        output = func.run()
+        return output
+    except Exception as e:
+        return "Error: " + str(e)
