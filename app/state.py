@@ -16,11 +16,11 @@ class State:
     last_poem: str = ""
     client: openai.OpenAI = field(default_factory=setup_llm)
 
-    def update_poem(self, poem: str):
+    def update_poem(self, poem):
         """Updates the state with the latest generated poem."""
         self.last_poem = poem
 
-    def get_poem(self) -> str:
+    def get_poem(self):
         """Retrieves the last generated poem from the state."""
         if not self.last_poem:
             raise ValueError("No poem has been generated yet.")

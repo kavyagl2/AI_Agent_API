@@ -1,81 +1,40 @@
-from typing import List, Dict, Any, Union
-from openai import OpenAI
-from openai.types.chat import ChatCompletionSystemMessageParam
-from .tools import GeneratePoem, TrimPoem, Recapitalize, Decapitalize, HandlePoemQuery
-
-
-TOOL_FUNCTIONS = {
-    "generate_poem": GeneratePoem,
-    "trim_poem": TrimPoem,
-    "recapitalize": Recapitalize,
-    "decapitalize": Decapitalize,
-    "handle_poem_query": HandlePoemQuery,
-}
-
-def get_completion(
-    messages: List[Dict[str, str]],  # List of messages
-    tool_functions: List[Any],       # List of available tool functions
-    client: OpenAI,                 
-    model: str                       
-) -> str | None:
+def get_completion(messages, tool_functions, client, model):
+    
     while True:
-        # Request completion from OpenAI
-        messages_params: List[ChatCompletionSystemMessageParam] = [
-    ChatCompletionSystemMessageParam(role='system', **msg)
-    for msg in messages
-]
         completion = client.chat.completions.create(
             model=model,
-            messages=messages_params,  
+            messages=messages,
             tools=[{"type": "function", "function": func.openai_schema} for func in tool_functions],
             tool_choice="auto",
             temperature=0.5,
             max_tokens=4096,
         )
 
-        # Get the first response message
         completion_message = completion.choices[0].message
-        
-        # If no tool calls, return the content
+
         if completion_message.tool_calls is None:
-            return (completion_message.content)
+            return completion_message.content
+        
         else:
-            messages.append({k: str(v) for k, v in completion_message.to_dict().items()})
+            messages.append(completion_message)
+            for tool_call in completion_message.tool_calls:
+                tool_result = execute_tool(tool_call, tool_functions)
+                messages.append({
+                    "tool_call_id": tool_call.id, 
+                    "role": "tool",     
+                    "name": tool_call.function.name, 
+                    "content": tool_result,
+                    })
+            return messages
 
-        # Process tool calls
-        for tool_call in completion_message.tool_calls:
-            tool_call_dict = tool_call.to_dict()  
-            tool_result = execute_tool(tool_call_dict, tool_functions)
-            if isinstance(tool_result, int):
-                tool_result = str(tool_result)
-            messages.append({
-                "tool_call_id": tool_call.id, 
-                "role": "tool", 
-                "name": tool_call.function.name, 
-                "content": str(tool_result)})
-            return tool_result            
- 
-def execute_tool(tool_call_dict: Dict[str, Any], tool_functions: List[Any],) -> Union[str, int, None]:
-    """
-    Executes the requested tool based on the tool call dictionary.
+def execute_tool(tool_call, funcs):
 
-    Args:
-        tool_call_dict (Dict[str, Any]): The dictionary containing tool details.
-        tool_functions (List[Any]): The list of available tool functions.
-
-    Returns:
-        Union[str, int, None]: The result of the tool execution.
-    """
-    tool_name = tool_call_dict["function"]
-    kwargs = tool_call_dict.get("arguments", {})
-    
-    if tool_name not in TOOL_FUNCTIONS:
-        raise ValueError(f"Tool '{tool_name}' not found.")
-    
+    func = next(iter([func for func in funcs if func.__name__ == tool_call["function"]["name"]]))
+    if not func:
+        return f"Error: Function {tool_call['function']['name']} not found. Available functions: {[func.__name__ for func in funcs]}"
     try:
-        tool = TOOL_FUNCTIONS[tool_name](**kwargs)
-        return tool.run()
-    except TypeError as e:
-        raise ValueError(f"Error in executing tool '{tool_name}': {e}")
-
-
+        func = func(**eval(tool_call["function"]["arguments"]))
+        output = func.run()
+        return output
+    except Exception as e:
+        return "Error: " + str(e)

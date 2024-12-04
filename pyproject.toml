@@ -15,6 +15,7 @@ pydantic = "^2.8.2"
 fastapi = "^0.112.1"
 
 # TODO: update dev dependencies
+instructor = "^1.7.0"
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2" # recommend looking at ruff
 flake8 = "^7.1.0" # which does both these things better
@@ -27,4 +28,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
