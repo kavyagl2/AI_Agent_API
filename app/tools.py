@@ -3,6 +3,7 @@ from typing import Optional
 
 class OpenAISchema(BaseModel):
     def run(self) -> str:
+        
         raise NotImplementedError
 
 class GeneratePoem(OpenAISchema):
